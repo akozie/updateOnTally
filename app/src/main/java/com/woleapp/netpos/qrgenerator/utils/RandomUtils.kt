@@ -108,6 +108,7 @@ object RandomUtils {
         serverResponse.observe(this.viewLifecycleOwner) {
             when (it.status) {
                 Status.SUCCESS -> {
+                    Log.d("MASTERCARDSUCCESS", "MASTERCARDSUCCESS")
                     loadingDialog.dismiss()
                     successAction()
                 }

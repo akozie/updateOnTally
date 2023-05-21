@@ -1,6 +1,5 @@
 package com.woleapp.netpos.qrgenerator.di.customDependencies
 
-import android.util.Log
 import android.webkit.JavascriptInterface
 import androidx.core.os.bundleOf
 import androidx.fragment.app.FragmentManager
@@ -18,7 +17,8 @@ class JavaScriptInterface(
     private val cReq: String,
     private val acsUrl: String,
     private val transId: String,
-    private val redirectHtml: String
+    private val redirectHtml: String,
+    private val popBackFragment: () -> Unit
 ) {
     private val context = fragmentManager.fragments.first().requireContext()
     private val loader = RandomUtils.alertDialog(context, R.layout.layout_loading_dialog)
@@ -44,15 +44,12 @@ class JavaScriptInterface(
                 fragmentManager.fragments.first().requireActivity().runOnUiThread {
                     loader.dismiss()
                 }
-
             }
             fragmentManager.setFragmentResult(
                 QR_TRANSACTION_RESULT_REQUEST_KEY,
                 bundleOf(QR_TRANSACTION_RESULT_BUNDLE_KEY to responseFromWebView)
             )
-            fragmentManager.popBackStack()
-            val responseModal = ResponseModal()
-            responseModal.show(fragmentManager, STRING_QR_RESPONSE_MODAL_DIALOG_TAG)
+            popBackFragment.invoke()
         }else{
             fragmentManager.fragments.first().requireActivity().runOnUiThread {
                 loader.show()

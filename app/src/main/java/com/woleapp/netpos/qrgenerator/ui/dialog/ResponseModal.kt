@@ -1,8 +1,6 @@
 package com.woleapp.netpos.qrgenerator.ui.dialog
 
-import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,26 +13,24 @@ import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.setFragmentResultListener
 import androidx.navigation.fragment.findNavController
 import com.airbnb.lottie.LottieAnimationView
-import com.pixplicity.easyprefs.library.Prefs
 import com.woleapp.netpos.qrgenerator.R
 import com.woleapp.netpos.qrgenerator.databinding.LayoutQrReceiptPdfBinding
 import com.woleapp.netpos.qrgenerator.databinding.TransactionStatusModalBinding
 import com.woleapp.netpos.qrgenerator.model.pay.ModalData
 import com.woleapp.netpos.qrgenerator.model.pay.QrTransactionResponseModel
 import com.woleapp.netpos.qrgenerator.model.verve.VerveOTPResponse
-import com.woleapp.netpos.qrgenerator.ui.activities.AuthenticationActivity
-import com.woleapp.netpos.qrgenerator.ui.activities.MainActivity
-import com.woleapp.netpos.qrgenerator.utils.*
+import com.woleapp.netpos.qrgenerator.utils.QR_TRANSACTION_RESULT_BUNDLE_KEY
+import com.woleapp.netpos.qrgenerator.utils.QR_TRANSACTION_RESULT_REQUEST_KEY
 import com.woleapp.netpos.qrgenerator.utils.RandomUtils.formatCurrency
 import com.woleapp.netpos.qrgenerator.utils.RandomUtils.observeServerResponse
+import com.woleapp.netpos.qrgenerator.utils.Singletons
+import com.woleapp.netpos.qrgenerator.utils.initViewsForPdfLayout
 import com.woleapp.netpos.qrgenerator.viewmodels.QRViewModel
 import com.woleapp.netpos.qrgenerator.viewmodels.TransactionViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import java.io.OutputStream
-import javax.inject.Inject
 
 @AndroidEntryPoint
-class ResponseModal @Inject constructor() : DialogFragment() {
+class ResponseModal : DialogFragment() {
     private lateinit var binding: TransactionStatusModalBinding
     private lateinit var lottieIcon: LottieAnimationView
     private lateinit var statusTv: TextView
@@ -122,12 +118,12 @@ class ResponseModal @Inject constructor() : DialogFragment() {
         super.onResume()
         setData()
         cancelBtn.setOnClickListener {
-            if (qrViewModel.displayQrStatus == 0){
+            if (qrViewModel.displayQrStatus == 0) {
                 dialog?.dismiss()
 //                Prefs.remove(PREF_GENERATE_QR)
 //                startActivity(Intent(requireContext(), AuthenticationActivity::class.java))
 //                requireActivity().finish()
-            }else{
+            } else {
                 dialog?.dismiss()
 //                Prefs.remove(PREF_GENERATE_QR)
 //                startActivity(Intent(requireContext(), MainActivity::class.java))
@@ -170,10 +166,10 @@ class ResponseModal @Inject constructor() : DialogFragment() {
             qrViewModel.generateQrResponse, requireActivity().supportFragmentManager
         ) {
             if (qrViewModel.displayQrStatus == 0) {
-        //        Prefs.remove(PREF_GENERATE_QR)
+                //        Prefs.remove(PREF_GENERATE_QR)
                 findNavController().navigate(R.id.showQrFragment)
             } else {
-        //        Prefs.remove(PREF_GENERATE_QR)
+                //        Prefs.remove(PREF_GENERATE_QR)
                 findNavController().navigate(R.id.displayQrFragment2)
             }
         }

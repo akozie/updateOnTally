@@ -105,7 +105,7 @@ class TallyWalletResponseModal @Inject constructor() : DialogFragment() {
 //                qrViewModel.showReceiptDialogForQrPayment()
 //            }
             dialog?.dismiss()
-            requireActivity().supportFragmentManager.popBackStack()
+            findNavController().popBackStack()
         }
     }
 

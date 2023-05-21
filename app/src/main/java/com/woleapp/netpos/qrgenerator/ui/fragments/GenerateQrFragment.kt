@@ -350,8 +350,12 @@ class GenerateQrFragment : Fragment() {
         val qrRequest = getQrRequestModel()
         if (qrRequest.card_scheme.contains("verve", true)) {
             qrViewModel.setIsVerveCard(true)
-            val action = GenerateQrFragmentDirections.actionGenerateQrFragmentToQrPasswordPinBlockDialog()
-            findNavController().navigate(action)
+            if (findNavController().currentDestination?.id == R.id.generateQrFragment){
+                val action = GenerateQrFragmentDirections.actionGenerateQrFragmentToQrPasswordPinBlockDialog()
+                findNavController().navigate(action)
+            }else{
+                findNavController().popBackStack()
+            }
         } else {
             qrViewModel.setIsVerveCard(false)
             qrViewModel.displayQrStatus = 0

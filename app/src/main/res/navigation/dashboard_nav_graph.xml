@@ -101,6 +101,9 @@
         <action
             android:id="@+id/action_generateMoreQrFragment_to_enterOtpFragment2"
             app:destination="@id/enterOtpFragment2"/>
+        <action
+            android:id="@+id/action_generateMoreQrFragment_to_responseModal2"
+            app:destination="@id/responseModal2" />
     </fragment>
     <fragment
         android:id="@+id/merchantDetailsFragment"

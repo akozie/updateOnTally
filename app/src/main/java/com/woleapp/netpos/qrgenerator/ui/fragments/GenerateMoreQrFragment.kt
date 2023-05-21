@@ -5,7 +5,6 @@ import android.app.AlertDialog
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -26,14 +25,11 @@ import com.woleapp.netpos.qrgenerator.adapter.BankCardAdapter
 import com.woleapp.netpos.qrgenerator.adapter.CardSchemeAdapter
 import com.woleapp.netpos.qrgenerator.databinding.FragmentGenerateMoreQrBinding
 import com.woleapp.netpos.qrgenerator.databinding.LayoutQrReceiptPdfBinding
-import com.woleapp.netpos.qrgenerator.model.CardScheme
 import com.woleapp.netpos.qrgenerator.model.QrModelRequest
 import com.woleapp.netpos.qrgenerator.model.Row
 import com.woleapp.netpos.qrgenerator.model.RowX
 import com.woleapp.netpos.qrgenerator.model.checkout.CheckOutModel
 import com.woleapp.netpos.qrgenerator.model.pay.QrTransactionResponseModel
-import com.woleapp.netpos.qrgenerator.ui.dialog.QrPasswordPinBlockDialog
-import com.woleapp.netpos.qrgenerator.ui.webview.WebViewFragment
 import com.woleapp.netpos.qrgenerator.utils.*
 import com.woleapp.netpos.qrgenerator.utils.RandomUtils.alertDialog
 import com.woleapp.netpos.qrgenerator.utils.RandomUtils.observeServerResponse
@@ -71,29 +67,28 @@ class GenerateMoreQrFragment : Fragment() {
         generateQrViewModel.getCardSchemes()
         generateQrViewModel.getCardBanks()
         requireActivity().supportFragmentManager.setFragmentResultListener(
-            PIN_BLOCK_RK,
-            this
+            PIN_BLOCK_RK, this
         ) { _, bundle ->
             val data = bundle.getString(PIN_BLOCK_BK)
             data?.let {
                 val checkOutModel = getCheckOutModel()
                 val qrModelRequest = getQrRequestModel()
                 generateQrViewModel.displayQrStatus = 1
-                generateQrViewModel.payQrCharges(checkOutModel, qrModelRequest, it)
+                generateQrViewModel.payQrChargesForVerve(checkOutModel, qrModelRequest, it)
                 observeServerResponseOnce(
                     generateQrViewModel.payVerveResponse,
                     loader,
                     requireActivity().supportFragmentManager
                 ) {
                     if (generateQrViewModel.payVerveResponse.value?.data?.code == "90") {
-                  //      showToast(generateQrViewModel.payVerveResponse.value?.data?.result.toString())
+                        //      showToast(generateQrViewModel.payVerveResponse.value?.data?.result.toString())
                     } else {
                         Prefs.putString(PREF_GENERATE_QR, Gson().toJson(getQrRequestModel()))
-                        if (findNavController().currentDestination?.id == R.id.generateMoreQrFragment){
+                        if (findNavController().currentDestination?.id == R.id.generateMoreQrFragment) {
                             val action =
                                 GenerateMoreQrFragmentDirections.actionGenerateMoreQrFragmentToEnterOtpFragment2()
                             findNavController().navigate(action)
-                        }else{
+                        } else {
                             findNavController().navigate(R.id.enterOtpFragment2)
                         }
 //                        parentFragmentManager.beginTransaction()
@@ -104,11 +99,21 @@ class GenerateMoreQrFragment : Fragment() {
                 }
             }
         }
+
+        requireActivity().supportFragmentManager.setFragmentResultListener(
+            RESPONSE_FROM_WEBVIEW_FRAGMENT_RK, this
+        ) { _, bundle ->
+            val data = bundle.getBoolean(RESPONSE_FROM_WEBVIEW_FRAGMENT_BK)
+            if (data) {
+                val action =
+                    GenerateMoreQrFragmentDirections.actionGenerateMoreQrFragmentToResponseModal2()
+                findNavController().navigate(action)
+            }
+        }
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         // Inflate the layout for this fragment
         pdfView = LayoutQrReceiptPdfBinding.inflate(layoutInflater)
@@ -138,14 +143,16 @@ class GenerateMoreQrFragment : Fragment() {
         initViews()
         generateQrViewModel.cardSchemeResponse.observe(viewLifecycleOwner) {
             val cardSchemeAdapter = CardSchemeAdapter(
-                generateQrViewModel.cardSchemes, requireContext(),
+                generateQrViewModel.cardSchemes,
+                requireContext(),
                 android.R.layout.simple_expandable_list_item_1
             )
             qrCardScheme.setAdapter(cardSchemeAdapter)
         }
         generateQrViewModel.issuingBankResponse.observe(viewLifecycleOwner) {
             val bankCardAdapter = BankCardAdapter(
-                generateQrViewModel.issuingBank, requireContext(),
+                generateQrViewModel.issuingBank,
+                requireContext(),
                 android.R.layout.simple_expandable_list_item_1
             )
             qrIssuingBank.setAdapter(bankCardAdapter)
@@ -159,19 +166,21 @@ class GenerateMoreQrFragment : Fragment() {
         userId = Singletons().getCurrentlyLoggedInUser()?.id
 
 
+//        submitBtn.setOnClickListener {
+//            if (findNavController().currentDestination?.id == R.id.generateMoreQrFragment){
+//                clearLiveData()
+//            generateQr()
+//            }else{
+//                findNavController().popBackStack()
+//            }
+//        }
         submitBtn.setOnClickListener {
-            if (findNavController().currentDestination?.id == R.id.generateMoreQrFragment){
-                clearLiveData()
             generateQr()
-            }else{
-                findNavController().popBackStack()
-            }
         }
 
         cardExpiryDate.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(
-                s: CharSequence?,
-                start: Int, count: Int, after: Int
+                s: CharSequence?, start: Int, count: Int, after: Int
             ) {
             }
 
@@ -360,23 +369,22 @@ class GenerateMoreQrFragment : Fragment() {
         val qrRequest = getQrRequestModel()
         if (qrRequest.card_scheme.contains("verve", true)) {
             generateQrViewModel.setIsVerveCard(true)
-            if (findNavController().currentDestination?.id == R.id.generateMoreQrFragment){
-                val action = GenerateMoreQrFragmentDirections.actionGenerateMoreQrFragmentToQrPasswordPinBlockDialog2()
+            if (findNavController().currentDestination?.id == R.id.generateMoreQrFragment) {
+                val action =
+                    GenerateMoreQrFragmentDirections.actionGenerateMoreQrFragmentToQrPasswordPinBlockDialog2()
                 findNavController().navigate(action)
-            }else{
+            } else {
                 findNavController().popBackStack()
             }
         } else {
             generateQrViewModel.setIsVerveCard(false)
             generateQrViewModel.displayQrStatus = 1
             generateQrViewModel.payQrCharges(checkOutModel, qrRequest)
-            observeServerResponse(
-                generateQrViewModel.payResponse,
-                loader,
-                requireActivity().supportFragmentManager
+            observeServerResponseOnce(
+                generateQrViewModel.payResponse, loader, requireActivity().supportFragmentManager
             ) {
                 if (generateQrViewModel.payResponse.value?.data?.code == "90") {
-                  //  showToast(generateQrViewModel.payResponse.value?.data?.result.toString())
+                    //  showToast(generateQrViewModel.payResponse.value?.data?.result.toString())
                 } else {
                     Prefs.putString(PREF_GENERATE_QR, Gson().toJson(getQrRequestModel()))
                     if (findNavController().currentDestination?.id == R.id.generateMoreQrFragment) {
@@ -391,42 +399,38 @@ class GenerateMoreQrFragment : Fragment() {
         }
     }
 
-    private fun getQrRequestModel(): QrModelRequest =
-        QrModelRequest(
-            fullname = null,
-            email = null,
-            card_cvv = cardExpiryCvv.text.toString().trim(),
-            card_expiry = cardExpiryDate.text.toString().trim(),
-            card_number = cardExpiryNumber.text.toString().trim(),
-            card_scheme = qrCardScheme.text.toString().trim(),
-            issuing_bank = bankCard,
-            mobile_phone = null,
-            user_id = userId
-        )
+    private fun getQrRequestModel(): QrModelRequest = QrModelRequest(
+        fullname = null,
+        email = null,
+        card_cvv = cardExpiryCvv.text.toString().trim(),
+        card_expiry = cardExpiryDate.text.toString().trim(),
+        card_number = cardExpiryNumber.text.toString().trim(),
+        card_scheme = qrCardScheme.text.toString().trim(),
+        issuing_bank = bankCard,
+        mobile_phone = null,
+        user_id = userId
+    )
 
-    private fun getCheckOutModel(): CheckOutModel =
-        CheckOutModel(
-            merchantId = UtilityParam.STRING_CHECKOUT_MERCHANT_ID,
-            name = userFullName.text.toString().trim(),
-            email = emailAddress.text.toString().trim(),
-            amount = CHARGE_AMOUNT,
-            currency = "NGN"
-        )
+    private fun getCheckOutModel(): CheckOutModel = CheckOutModel(
+        merchantId = UtilityParam.STRING_CHECKOUT_MERCHANT_ID,
+        name = userFullName.text.toString().trim(),
+        email = emailAddress.text.toString().trim(),
+        amount = CHARGE_AMOUNT,
+        currency = "NGN"
+    )
 
 
     private fun printQrTransactionUtil(qrTransaction: QrTransactionResponseModel) {
         receiptPdf = createPdf(binding, this)
         downloadPflImplForQrTransaction(qrTransaction)
         showSnackBar(
-            binding.root,
-            "File downloaded"
+            binding.root, "File downloaded"
         )
     }
 
     private fun downloadPflImplForQrTransaction(qrTransaction: QrTransactionResponseModel) {
         initViewsForPdfLayout(
-            pdfView,
-            qrTransaction
+            pdfView, qrTransaction
         )
         getPermissionAndCreatePdf(pdfView)
     }
@@ -443,9 +447,9 @@ class GenerateMoreQrFragment : Fragment() {
         }
     }
 
-    private fun clearLiveData(){
+    private fun clearLiveData() {
         generateQrViewModel.payVerveResponse.removeObservers(viewLifecycleOwner)
-    //    generateQrViewModel.payResponse.removeObservers(viewLifecycleOwner)
+        //    generateQrViewModel.payResponse.removeObservers(viewLifecycleOwner)
         generateQrViewModel.transactionResponseFromVerve.removeObservers(viewLifecycleOwner)
     }
 

@@ -10,6 +10,7 @@ import android.webkit.WebView
 import androidx.activity.OnBackPressedCallback
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import com.woleapp.netpos.qrgenerator.R
 import com.woleapp.netpos.qrgenerator.databinding.FragmentNeedCardWebViewBinding
 import dagger.hilt.android.AndroidEntryPoint
@@ -41,7 +42,7 @@ class NeedCardWebViewFragment : Fragment() {
                     if (webView.canGoBack()) {
                         webView.goBack()
                     } else {
-                        requireActivity().supportFragmentManager.popBackStack()
+                        findNavController().popBackStack()
                     }
                 }
             }

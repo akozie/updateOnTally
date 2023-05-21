@@ -4,9 +4,7 @@ import android.content.Context
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.text.method.LinkMovementMethod
 import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,18 +12,20 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.TextView
 import androidx.core.os.bundleOf
 import androidx.databinding.DataBindingUtil
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import com.chaos.view.PinView
 import com.google.gson.Gson
 import com.woleapp.netpos.qrgenerator.R
 import com.woleapp.netpos.qrgenerator.databinding.FragmentEnterOtpBinding
-import com.woleapp.netpos.qrgenerator.model.pay.QrTransactionResponseModel
 import com.woleapp.netpos.qrgenerator.model.verve.VerveOTPResponse
-import com.woleapp.netpos.qrgenerator.ui.dialog.ResponseModal
-import com.woleapp.netpos.qrgenerator.utils.*
+import com.woleapp.netpos.qrgenerator.utils.QR_TRANSACTION_RESULT_BUNDLE_KEY
+import com.woleapp.netpos.qrgenerator.utils.QR_TRANSACTION_RESULT_REQUEST_KEY
+import com.woleapp.netpos.qrgenerator.utils.RESPONSE_FROM_WEBVIEW_FRAGMENT_BK
+import com.woleapp.netpos.qrgenerator.utils.RESPONSE_FROM_WEBVIEW_FRAGMENT_RK
+import com.woleapp.netpos.qrgenerator.utils.RandomUtils.alertDialog
 import com.woleapp.netpos.qrgenerator.utils.RandomUtils.closeSoftKeyboard
-import com.woleapp.netpos.qrgenerator.utils.RandomUtils.customSpannableString
 import com.woleapp.netpos.qrgenerator.utils.RandomUtils.observeServerResponse
 import com.woleapp.netpos.qrgenerator.viewmodels.QRViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -40,33 +40,26 @@ class EnterOtpFragment @Inject constructor() : Fragment() {
     private lateinit var loader: android.app.AlertDialog
 
     @Inject
-    lateinit var responseModal: ResponseModal
-
-    @Inject
     lateinit var gson: Gson
     private val viewModel by activityViewModels<QRViewModel>()
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         // Inflate the layout for this fragment
-        binding =
-            DataBindingUtil.inflate(inflater, R.layout.fragment_enter_otp, container, false)
+        binding = DataBindingUtil.inflate(inflater, R.layout.fragment_enter_otp, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        loader = RandomUtils.alertDialog(requireContext(), R.layout.layout_loading_dialog)
+        loader = alertDialog(requireContext(), R.layout.layout_loading_dialog)
         initViews()
         otpView.requestFocus()
         val inputMethodManager =
             requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         inputMethodManager.toggleSoftInput(
-            InputMethodManager.SHOW_FORCED,
-            InputMethodManager.HIDE_IMPLICIT_ONLY
+            InputMethodManager.SHOW_FORCED, InputMethodManager.HIDE_IMPLICIT_ONLY
         )
         otpView.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
@@ -84,15 +77,15 @@ class EnterOtpFragment @Inject constructor() : Fragment() {
                         ) {
                             val transactionResponseFromVerve =
                                 viewModel.transactionResponseFromVerve.value!!.data!! as VerveOTPResponse
-                            if (transactionResponseFromVerve.code == "00" || transactionResponseFromVerve.code == "90"
-                                || transactionResponseFromVerve.code == "80"){
-                                requireActivity().supportFragmentManager.setFragmentResult(
+                            if (transactionResponseFromVerve.code == "00" || transactionResponseFromVerve.code == "90" || transactionResponseFromVerve.code == "80") {
+                                parentFragmentManager.setFragmentResult(
                                     QR_TRANSACTION_RESULT_REQUEST_KEY,
                                     bundleOf(QR_TRANSACTION_RESULT_BUNDLE_KEY to transactionResponseFromVerve)
                                 )
-                                responseModal.show(
-                                    requireActivity().supportFragmentManager,
-                                    STRING_QR_RESPONSE_MODAL_DIALOG_TAG
+                                Log.d("VERVERESPONSE", transactionResponseFromVerve.toString())
+                                requireActivity().supportFragmentManager.setFragmentResult(
+                                    RESPONSE_FROM_WEBVIEW_FRAGMENT_RK,
+                                    bundleOf(RESPONSE_FROM_WEBVIEW_FRAGMENT_BK to true)
                                 )
                                 findNavController().popBackStack()
                             }
